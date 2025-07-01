@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const Timer = ({ onTimerComplete }) => {
-    const [time, setTime] = useState(1800); // 30 minutes in seconds
+const Timer = ({ onTimerComplete, sessionLength }) => {
+    const [time, setTime] = useState(sessionLength * 60);
     const [isRunning, setIsRunning] = useState(false);
 
     const startTimer = () => {
@@ -9,9 +9,13 @@ const Timer = ({ onTimerComplete }) => {
     };
 
     const resetTimer = () => {
-        setTime(1800);
+        setTime(sessionLength * 60);
         setIsRunning(false);
     };
+
+    useEffect(() => {
+        setTime(sessionLength * 60);
+    }, [sessionLength]);
 
     useEffect(() => {
         if (isRunning) {
@@ -19,15 +23,15 @@ const Timer = ({ onTimerComplete }) => {
                 setTime(prevTime => {
                     if (prevTime <= 1) {
                         setIsRunning(false);
-                        onTimerComplete();
-                        return 1800;
+                        onTimerComplete(sessionLength);
+                        return sessionLength * 60;
                     }
                     return prevTime - 1;
                 });
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [isRunning, time]);
+    }, [isRunning, time, sessionLength, onTimerComplete]);
 
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
