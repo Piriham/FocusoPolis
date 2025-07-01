@@ -1,0 +1,28 @@
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 40px;
+}
+
+.timer-section {
+  background: #f5f5f5;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.city-section {
+  background: #f5f5f5;
+  padding: 20px;
+  border-radius: 8px;
+}
