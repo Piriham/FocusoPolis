@@ -3,6 +3,10 @@ import Timer from './components/Timer';
 import City from './components/City';
 import FocusTimerPage from './components/FocusTimerPage';
 import CityViewPage from './components/CityViewPage';
+import Login from './components/Login';
+import AuthSuccess from './components/AuthSuccess';
+import Register from './components/Register';
+import { BrowserRouter as Router, Route, Switch, Redirect, useHistory } from 'react-router-dom';
 import './App.css';
 
 const BUILDING_TYPES = [
@@ -12,28 +16,39 @@ const BUILDING_TYPES = [
   { min: 0, type: 'B1' },
 ];
 
-function App() {
-  const [buildings, setBuildings] = useState([
-    { type: 'B1' },
-    { type: 'B2' },
-    { type: 'B3' },
-    { type: 'B4' },
-    { type: 'B1' },
-    { type: 'B2' },
-    { type: 'B3' },
-    { type: 'B4' },
-    { type: 'B1' },
-    { type: 'B2' },
-    { type: 'B3' },
-    { type: 'B4' },
-    { type: 'B1' },
-    { type: 'B2' },
-    { type: 'B3' },
-    { type: 'B4' },
-  ]);
+function MainApp() {
+  const [buildings, setBuildings] = useState([]);
   const [currentFocusTime, setCurrentFocusTime] = useState(0);
   const [lastSessionLength, setLastSessionLength] = useState(25);
   const [page, setPage] = useState('timer');
+  const history = useHistory();
+
+  // Fetch city data on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetch('http://localhost:5001/api/city', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.buildings) setBuildings(data.buildings);
+      });
+  }, []);
+
+  // Save city data when buildings change
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || buildings.length === 0) return;
+    fetch('http://localhost:5001/api/city', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ city: { buildings } })
+    });
+  }, [buildings]);
 
   const getBuildingType = (minutes) => {
     for (let b of BUILDING_TYPES) {
@@ -54,6 +69,11 @@ function App() {
     setBuildings(prev => [...prev, { type, position }]);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    history.push('/login');
+  };
+
   return (
     <div className="app">
       <header>
@@ -61,6 +81,7 @@ function App() {
         <div style={{ margin: '16px 0' }}>
           <button onClick={() => setPage('timer')} disabled={page === 'timer'}>Focus Timer</button>
           <button onClick={() => setPage('city')} disabled={page === 'city'} style={{ marginLeft: 8 }}>City View</button>
+          <button onClick={handleLogout} style={{ marginLeft: 16 }}>Logout</button>
         </div>
       </header>
       <main style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
@@ -75,6 +96,20 @@ function App() {
         )}
       </main>
     </div>
+  );
+}
+
+function App() {
+  const token = localStorage.getItem('token');
+  return (
+    <Router>
+      <Switch>
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route path="/auth-success" component={AuthSuccess} />
+        <Route path="/" render={() => (token ? <MainApp /> : <Redirect to="/login" />)} />
+      </Switch>
+    </Router>
   );
 }
 

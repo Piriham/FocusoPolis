@@ -9,10 +9,10 @@ const TILE_HEIGHT = 122; // height of tile.jpeg
 
 // Map building types to isometric building images
 const buildingImages = {
-  B1: '/Buildings Isometric/B1.jpg',
-  B2: '/Buildings Isometric/B2.jpg',
-  B3: '/Buildings Isometric/B3.jpg',
-  B4: '/Buildings Isometric/B4.jpg',
+  B1: '/BuildingsIsometric/B1.jpg',
+  B2: '/BuildingsIsometric/B2.jpg',
+  B3: '/BuildingsIsometric/B3.jpg',
+  B4: '/BuildingsIsometric/B4.jpg',
 };
 
 // Helper to get isometric position
@@ -75,10 +75,10 @@ const City = ({ buildings }) => {
                   alt={cell}
                   style={{
                     position: 'absolute',
-                    left: '10%',
-                    top: '5%',
-                    width: '80%',
-                    height: '80%',
+                    left: '0%',
+                    top: '0%',
+                    width: '300%',
+                    height: '300%',
                     objectFit: 'contain',
                     zIndex: 2,
                     pointerEvents: 'none',
