@@ -1,23 +1,84 @@
 import React from 'react';
 import Timer from './Timer';
 
+const CitySkylineSVG = () => (
+  <svg width="100%" height="180" viewBox="0 0 800 180" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: 'absolute', bottom: 0, left: 0, zIndex: 0 }}>
+    <rect width="800" height="180" fill="url(#sky)" />
+    <g opacity="0.7">
+      <rect x="40" y="100" width="60" height="80" fill="#b0bec5" />
+      <rect x="120" y="120" width="40" height="60" fill="#90a4ae" />
+      <rect x="180" y="80" width="80" height="100" fill="#78909c" />
+      <rect x="280" y="110" width="50" height="70" fill="#b0bec5" />
+      <rect x="350" y="130" width="30" height="50" fill="#90a4ae" />
+      <rect x="400" y="90" width="70" height="90" fill="#78909c" />
+      <rect x="490" y="120" width="40" height="60" fill="#b0bec5" />
+      <rect x="550" y="100" width="60" height="80" fill="#90a4ae" />
+      <rect x="630" y="110" width="50" height="70" fill="#78909c" />
+      <rect x="700" y="130" width="30" height="50" fill="#b0bec5" />
+    </g>
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1" gradientTransform="scale(800 180)">
+        <stop offset="0%" stopColor="#e3f2fd" />
+        <stop offset="100%" stopColor="#b3e5fc" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 const FocusTimerPage = ({ lastSessionLength, setLastSessionLength, handleTimerComplete }) => (
-  <div className="timer-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minWidth: 450, background: '#fafbfc', borderRadius: 16, boxShadow: '0 2px 16px #e0e0e0', padding: 48, marginTop: 40 }}>
-    <h2>Focus Timer</h2>
-    <div className="session-length-slider" style={{ marginBottom: 32 }}>
-      <label htmlFor="sessionLength">Session Length: {lastSessionLength} min</label>
-      <input
-        type="range"
-        id="sessionLength"
-        min={5}
-        max={120}
-        step={5}
-        value={lastSessionLength}
-        onChange={e => setLastSessionLength(Number(e.target.value))}
-        style={{ width: 350 }}
-      />
+  <div style={{
+    minHeight: '100vh',
+    width: '100vw',
+    background: 'linear-gradient(180deg, #e3f2fd 0%, #b3e5fc 100%)',
+    position: 'relative',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }}>
+    <CitySkylineSVG />
+    <div style={{
+      position: 'relative',
+      zIndex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 400,
+      minHeight: 420,
+      background: 'rgba(255,255,255,0.35)',
+      borderRadius: 24,
+      boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)',
+      backdropFilter: 'blur(8px)',
+      border: '1.5px solid rgba(255,255,255,0.25)',
+      padding: 40,
+      marginTop: 40,
+    }}>
+      <div style={{ marginBottom: 16 }}>
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect x="8" y="20" width="32" height="20" rx="4" fill="#90caf9" /><rect x="16" y="12" width="16" height="12" rx="4" fill="#1976d2" /><rect x="20" y="8" width="8" height="8" rx="4" fill="#fff" /></svg>
+      </div>
+      <h2 style={{ fontWeight: 700, fontSize: 28, marginBottom: 24, color: '#1976d2', letterSpacing: 1 }}>Focus Timer</h2>
+      <div className="session-length-slider" style={{ marginBottom: 32, width: 320 }}>
+        <label htmlFor="sessionLength" style={{ fontWeight: 500, color: '#1976d2', marginBottom: 8, display: 'block' }}>Session Length: {lastSessionLength} min</label>
+        <input
+          type="range"
+          id="sessionLength"
+          min={5}
+          max={120}
+          step={5}
+          value={lastSessionLength}
+          onChange={e => setLastSessionLength(Number(e.target.value))}
+          style={{ width: '100%', accentColor: '#1976d2', height: 6, borderRadius: 4 }}
+        />
+      </div>
+      <div style={{ marginBottom: 32, width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <Timer onTimerComplete={handleTimerComplete} sessionLength={lastSessionLength} />
+      </div>
+      <div style={{ fontSize: 14, color: '#78909c', marginTop: 12 }}>
+        Stay focused to build your dream city!
+      </div>
     </div>
-    <Timer onTimerComplete={handleTimerComplete} sessionLength={lastSessionLength} />
   </div>
 );
 
