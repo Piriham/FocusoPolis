@@ -5,10 +5,6 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5001/auth/google';
-  };
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -35,21 +31,6 @@ const Login = () => {
         <button type="submit" style={{ width: '100%' }}>Sign in</button>
         {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
       </form>
-      <div style={{ margin: '16px 0' }}>or</div>
-      <button onClick={handleGoogleLogin} style={{
-        padding: '12px 24px',
-        fontSize: 18,
-        borderRadius: 8,
-        background: '#4285F4',
-        color: 'white',
-        border: 'none',
-        cursor: 'pointer'
-      }}>
-        Sign in or Register with Google
-      </button>
-      <div style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
-        New users will be registered automatically.
-      </div>
       <div style={{ marginTop: 16 }}>
         Don't have an account? <a href="/register">Register</a>
       </div>

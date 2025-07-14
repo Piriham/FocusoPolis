@@ -4,6 +4,30 @@ const Timer = ({ onTimerComplete, sessionLength }) => {
     const [time, setTime] = useState(sessionLength * 60);
     const [isRunning, setIsRunning] = useState(false);
 
+    const logFocusSession = async (duration, status = 'completed') => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch('http://localhost:5001/api/focus-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ duration, status })
+            });
+
+            if (response.ok) {
+                console.log('Focus session logged successfully');
+            } else {
+                console.error('Failed to log focus session');
+            }
+        } catch (error) {
+            console.error('Error logging focus session:', error);
+        }
+    };
+
     const startTimer = () => {
         setIsRunning(true);
     };
@@ -24,6 +48,8 @@ const Timer = ({ onTimerComplete, sessionLength }) => {
                     if (prevTime <= 1) {
                         setIsRunning(false);
                         onTimerComplete(sessionLength);
+                        // Log the completed focus session
+                        logFocusSession(sessionLength, 'completed');
                         return sessionLength * 60;
                     }
                     return prevTime - 1;

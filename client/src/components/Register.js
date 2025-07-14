@@ -8,17 +8,32 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
+    
+    if (!username.trim() || !password.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+    
+    try {
     const res = await fetch('http://localhost:5001/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username: username.trim(), password })
     });
     const data = await res.json();
+      
     if (res.ok && data.token) {
       localStorage.setItem('token', data.token);
       window.location.href = '/';
+      } else {
+        if (res.status === 409) {
+          setError(`Username "${username}" is already taken. Please choose a different username.`);
     } else {
       setError(data.error || 'Registration failed');
+        }
+      }
+    } catch (error) {
+      setError('Network error. Please check your connection and try again.');
     }
   };
 
@@ -29,21 +44,6 @@ const Register = () => {
       <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required style={{ width: '100%', marginBottom: 8 }} />
       <button type="submit" style={{ width: '100%' }}>Register</button>
       {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
-      <div style={{ margin: '16px 0' }}>or</div>
-      <button type="button" onClick={() => window.location.href = 'http://localhost:5001/auth/google'} style={{
-        padding: '12px 24px',
-        fontSize: 18,
-        borderRadius: 8,
-        background: '#4285F4',
-        color: 'white',
-        border: 'none',
-        cursor: 'pointer'
-      }}>
-        Register or Sign in with Google
-      </button>
-      <div style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
-        New users will be registered automatically.
-      </div>
       <div style={{ marginTop: 16 }}>
         Already have an account? <a href="/login">Sign in</a>
       </div>

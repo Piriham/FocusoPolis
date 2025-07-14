@@ -2,11 +2,6 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-    googleId: {
-        type: String,
-        unique: true,
-        sparse: true
-    },
     username: {
         type: String,
         required: true,
@@ -14,7 +9,7 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: false // Not required for OAuth users
+        required: true
     },
     city: {
         buildings: [{
@@ -24,7 +19,22 @@ const userSchema = new mongoose.Schema({
                 y: Number
             }
         }]
-    }
+    },
+    focusHistory: [{
+        duration: {
+            type: Number,
+            required: true
+        },
+        timestamp: {
+            type: Date,
+            default: Date.now
+        },
+        status: {
+            type: String,
+            enum: ['completed', 'interrupted'],
+            default: 'completed'
+        }
+    }]
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {
