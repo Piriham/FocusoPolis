@@ -1,95 +1,70 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './City.css';
 
-// Grid settings (rectangle tile)
-const GRID_COLS = 10;
-const GRID_ROWS = 6;
-const TILE_WIDTH = 34; // width of tile.jpeg
-const TILE_HEIGHT = 122; // height of tile.jpeg
-
-// Map building types to isometric building images
 const buildingImages = {
-  B1: '/BuildingsIsometric/B1.jpg',
-  B2: '/BuildingsIsometric/B2.jpg',
-  B3: '/BuildingsIsometric/B3.jpg',
-  B4: '/BuildingsIsometric/B4.jpg',
+  B1: process.env.PUBLIC_URL + '/BuildingsIsometric/B1-bg.png',
+  B2: process.env.PUBLIC_URL + '/BuildingsIsometric/B2-bg.png',
+  B3: process.env.PUBLIC_URL + '/BuildingsIsometric/B3-bg.png',
+  B4: process.env.PUBLIC_URL + '/BuildingsIsometric/B4-bg.png',
 };
 
-// Helper to get isometric position
-function getIsoPosition(row, col) {
+const GRID_SIZE = 5;
+const TOTAL_BUILDINGS = GRID_SIZE * GRID_SIZE;
+
+// Map session duration to building type
+function getBuildingType(duration) {
+  if (duration < 30) return 'B2';
+  if (duration < 60) return 'B4';
+  if (duration < 90) return 'B3';
+  return 'B1'; // 90-120 min
+}
+
+// Generate placeholder session data
+function getRandomSession(i) {
+  const now = new Date();
+  const daysAgo = Math.floor(Math.random() * 30);
+  const date = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+  const duration = 15 + Math.floor(Math.random() * 105); // 15-120 min
+  const type = getBuildingType(duration);
   return {
-    left: (col - row) * (TILE_WIDTH / 2) + (GRID_ROWS * TILE_WIDTH / 2),
-    top: (col + row) * (TILE_HEIGHT / 2),
+    duration,
+    date: date.toLocaleDateString(),
+    img: buildingImages[type],
+    type,
   };
 }
 
-// Convert buildings array (flat) to a 2D grid for demo
-function getGridWithBuildings(buildings) {
-  const grid = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
-  buildings.forEach((b, i) => {
-    const row = Math.floor(i / GRID_COLS);
-    const col = i % GRID_COLS;
-    if (row < GRID_ROWS && col < GRID_COLS) grid[row][col] = b.type;
-  });
-  return grid;
-}
+const sessions = Array.from({ length: TOTAL_BUILDINGS }, (_, i) => getRandomSession(i));
 
-const City = ({ buildings }) => {
-  const grid = getGridWithBuildings(buildings);
+function FlippableBuilding({ session, idx }) {
+  const [flipped, setFlipped] = useState(false);
   return (
     <div
-      className="city-container"
-      style={{
-        position: 'relative',
-        width: GRID_COLS * TILE_WIDTH,
-        height: GRID_ROWS * TILE_HEIGHT,
-        background: 'none',
-        margin: '0 auto',
-        borderRadius: 12,
-        boxSizing: 'content-box',
-        border: '2px solid #e0e0e0',
-        overflow: 'visible',
-      }}
+      className={`flippable-card${flipped ? ' flipped' : ''}`}
+      onClick={() => setFlipped(f => !f)}
+      /* Only flips on mouse click */
     >
-      {/* Render tiles and buildings */}
-      {grid.map((rowArr, row) =>
-        rowArr.map((cell, col) => {
-          const pos = getIsoPosition(row, col);
-          return (
-            <div
-              key={`tile-${row}-${col}`}
-              style={{
-                position: 'absolute',
-                ...pos,
-                width: TILE_WIDTH,
-                height: TILE_HEIGHT,
-                zIndex: row + col,
-              }}
-            >
-              {cell && (
-                <span style={{ color: 'red', position: 'absolute', zIndex: 10, fontSize: 12 }}>{cell}</span>
-              )}
-              {cell && buildingImages[cell] && (
-                <img
-                  src={process.env.PUBLIC_URL + buildingImages[cell]}
-                  alt={cell}
-                  style={{
-                    position: 'absolute',
-                    left: '0%',
-                    top: '0%',
-                    width: '300%',
-                    height: '300%',
-                    objectFit: 'contain',
-                    zIndex: 2,
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                  }}
-                />
-              )}
-            </div>
-          );
-        })
-      )}
+      <div className="flippable-card-inner">
+        <div className="flippable-card-front">
+          <img src={session.img} alt={`Building ${session.type}`} className="building-img" />
+        </div>
+        <div className="flippable-card-back">
+          <div className="session-info">
+            <div><b>Session:</b> {session.duration} min</div>
+            <div><b>Date:</b> {session.date}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const City = () => {
+  return (
+    <div className="city-grid city-grid-large">
+      {sessions.map((session, i) => (
+        <FlippableBuilding key={i} session={session} idx={i} />
+      ))}
     </div>
   );
 };
