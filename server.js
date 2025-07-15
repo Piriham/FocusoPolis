@@ -6,8 +6,17 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 const bcrypt = require('bcryptjs');
 const Room = require('./models/Room');
+const http = require('http');
+const socketio = require('socket.io');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketio(server, {
+  cors: {
+    origin: 'http://localhost:3000',
+    credentials: true
+  }
+});
 
 // Middleware
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
@@ -23,6 +32,50 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/focusopol
 })
 .catch((err) => {
   console.error('MongoDB connection error:', err);
+});
+
+// Socket.IO authentication and chat logic
+io.use((socket, next) => {
+  const token = socket.handshake.auth && socket.handshake.auth.token;
+  if (!token) return next(new Error('Authentication error'));
+  jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret', (err, user) => {
+    if (err) return next(new Error('Authentication error'));
+    socket.user = user;
+    next();
+  });
+});
+
+io.on('connection', (socket) => {
+  // Join a room
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+  });
+
+  // Handle chat messages
+  socket.on('chat message', async ({ roomId, message }) => {
+    if (!roomId || !message) return;
+    const chatMsg = {
+      userId: socket.user.id,
+      username: socket.user.username || 'User',
+      message,
+      timestamp: new Date()
+    };
+    // Save to DB
+    try {
+      const room = await Room.findById(roomId);
+      if (room) {
+        room.messages.push(chatMsg);
+        // Limit to last 100 messages
+        if (room.messages.length > 100) {
+          room.messages = room.messages.slice(-100);
+        }
+        await room.save();
+      }
+    } catch (err) {
+      console.error('Error saving chat message:', err);
+    }
+    io.to(roomId).emit('chat message', { ...chatMsg, timestamp: chatMsg.timestamp.toISOString() });
+  });
 });
 
 // JWT middleware
@@ -234,12 +287,244 @@ app.post('/api/rooms', authenticateJWT, async (req, res) => {
   }
 });
 
+// List all rooms
+app.get('/api/rooms', authenticateJWT, async (req, res) => {
+  try {
+    const rooms = await Room.find({});
+    res.json(rooms);
+  } catch (error) {
+    console.error('Error listing rooms:', error);
+    res.status(500).json({ error: 'Failed to list rooms' });
+  }
+});
+
+// Join a room
+app.post('/api/rooms/:roomId/join', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    if (!room.members.includes(req.user.id)) {
+      room.members.push(req.user.id);
+      await room.save();
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error joining room:', error);
+    res.status(500).json({ error: 'Failed to join room' });
+  }
+});
+
+// Leave a room
+app.post('/api/rooms/:roomId/leave', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    room.members = room.members.filter(
+      memberId => memberId.toString() !== req.user.id
+    );
+    await room.save();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error leaving room:', error);
+    res.status(500).json({ error: 'Failed to leave room' });
+  }
+});
+
+// Get room details with member stats
+app.get('/api/rooms/:roomId', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findById(roomId).populate('members', 'username city focusHistory');
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    // For each member, calculate stats
+    const members = room.members.map(member => {
+      const totalFocus = (member.focusHistory || []).reduce((sum, s) => sum + (s.duration || 0), 0);
+      const buildings = (member.city && member.city.buildings) ? member.city.buildings.length : 0;
+      return {
+        id: member._id,
+        username: member.username,
+        totalFocus,
+        buildings
+      };
+    });
+    res.json({
+      _id: room._id,
+      name: room.name,
+      createdBy: room.createdBy,
+      createdAt: room.createdAt,
+      members
+    });
+  } catch (error) {
+    console.error('Error getting room details:', error);
+    res.status(500).json({ error: 'Failed to get room details' });
+  }
+});
+
+// Get room leaderboard
+app.get('/api/rooms/:roomId/leaderboard', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findById(roomId).populate('members', 'username city focusHistory');
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    // Calculate stats for leaderboard
+    const leaderboard = room.members.map(member => {
+      const totalFocus = (member.focusHistory || []).reduce((sum, s) => sum + (s.duration || 0), 0);
+      const buildings = (member.city && member.city.buildings) ? member.city.buildings.length : 0;
+      return {
+        id: member._id,
+        username: member.username,
+        totalFocus,
+        buildings
+      };
+    }).sort((a, b) => b.totalFocus - a.totalFocus); // Sort by total focus descending
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('Error getting leaderboard:', error);
+    res.status(500).json({ error: 'Failed to get leaderboard' });
+  }
+});
+
+// Get last 100 chat messages for a room
+app.get('/api/rooms/:roomId/messages', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    const messages = (room.messages || []).slice(-100).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    res.json(messages);
+  } catch (error) {
+    console.error('Error getting chat messages:', error);
+    res.status(500).json({ error: 'Failed to get chat messages' });
+  }
+});
+
+// Remove a member from the room (admin only)
+app.post('/api/rooms/:roomId/remove-member', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { userId } = req.body;
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    if (room.createdBy.toString() !== req.user.id) return res.status(403).json({ error: 'Only the room creator can remove members' });
+    if (userId === req.user.id) return res.status(400).json({ error: 'Creator cannot remove themselves' });
+    room.members = room.members.filter(id => id.toString() !== userId);
+    await room.save();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error removing member:', error);
+    res.status(500).json({ error: 'Failed to remove member' });
+  }
+});
+
+// Update room description (admin only)
+app.post('/api/rooms/:roomId/description', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { description } = req.body;
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    if (room.createdBy.toString() !== req.user.id) return res.status(403).json({ error: 'Only the room creator can update the description' });
+    room.description = description || '';
+    await room.save();
+    res.json({ success: true, description: room.description });
+  } catch (error) {
+    console.error('Error updating description:', error);
+    res.status(500).json({ error: 'Failed to update description' });
+  }
+});
+
+// Delete room (admin only)
+app.delete('/api/rooms/:roomId', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    if (room.createdBy.toString() !== req.user.id) return res.status(403).json({ error: 'Only the room creator can delete the room' });
+    await room.deleteOne();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting room:', error);
+    res.status(500).json({ error: 'Failed to delete room' });
+  }
+});
+
+// Set or update room goal (admin only)
+app.post('/api/rooms/:roomId/goal', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { amount, period } = req.body;
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    if (room.createdBy.toString() !== req.user.id) return res.status(403).json({ error: 'Only the room creator can set the goal' });
+    if (!amount || !period) return res.status(400).json({ error: 'Amount and period are required' });
+    room.goal = {
+      amount,
+      period,
+      setBy: req.user.id,
+      setAt: new Date()
+    };
+    await room.save();
+    res.json({ success: true, goal: room.goal });
+  } catch (error) {
+    console.error('Error setting goal:', error);
+    res.status(500).json({ error: 'Failed to set goal' });
+  }
+});
+
+// Get room goal progress
+app.get('/api/rooms/:roomId/goal-progress', authenticateJWT, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findById(roomId).populate('members', 'username focusHistory');
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    if (!room.goal || !room.goal.amount || !room.goal.period) return res.json({ goal: null, progress: 0, topContributors: [] });
+    // Calculate period start
+    const now = new Date();
+    let startDate;
+    switch (room.goal.period) {
+      case 'daily':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'weekly':
+        const dayOfWeek = now.getDay();
+        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToSubtract);
+        break;
+      case 'monthly':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      default:
+        startDate = new Date(0);
+    }
+    // Calculate total and per-member focus
+    let total = 0;
+    const contributors = [];
+    for (const member of room.members) {
+      const sessions = (member.focusHistory || []).filter(s => new Date(s.timestamp) >= startDate);
+      const memberTotal = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+      total += memberTotal;
+      contributors.push({ id: member._id, username: member.username, total: memberTotal });
+    }
+    contributors.sort((a, b) => b.total - a.total);
+    res.json({
+      goal: room.goal,
+      progress: total,
+      topContributors: contributors
+    });
+  } catch (error) {
+    console.error('Error getting goal progress:', error);
+    res.status(500).json({ error: 'Failed to get goal progress' });
+  }
+});
+
 // Routes
 app.get('/api/test', (req, res) => {
     res.json({ message: 'Server is running!' });
 });
 
 const PORT = 5001;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
