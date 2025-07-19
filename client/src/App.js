@@ -67,6 +67,8 @@ function MainApp() {
     if (buildingType) {
       setBuildings(prev => [...prev, {
         type: buildingType,
+        duration: sessionLength,
+        date: new Date().toLocaleString(),
         position: {
           x: Math.random() * 600,
           y: Math.random() * 300
