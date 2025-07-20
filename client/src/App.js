@@ -11,41 +11,12 @@ import RoomView from './components/RoomView';
 import AppNavigation from './components/AppNavigation';
 import { BrowserRouter as Router, Route, Switch, Redirect, useHistory, useLocation } from 'react-router-dom';
 import './App.css';
+import { jwtDecode } from 'jwt-decode';
 
-function MainApp() {
-  const [buildings, setBuildings] = useState([]);
+function MainApp({ buildings, setBuildings, handleTimerComplete, lastSessionLength, setLastSessionLength }) {
   const [currentFocusTime, setCurrentFocusTime] = useState(0);
-  const [lastSessionLength, setLastSessionLength] = useState(25);
-  const [page, setPage] = useState('timer');
   const history = useHistory();
   const location = useLocation();
-
-  // Fetch city data on mount
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    fetch('http://localhost:5001/api/city', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.buildings) setBuildings(data.buildings);
-      });
-  }, []);
-
-  // Save city data when buildings change
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token || buildings.length === 0) return;
-    fetch('http://localhost:5001/api/city', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ city: { buildings } })
-    });
-  }, [buildings]);
 
   const BUILDING_TYPES = [
     { min: 90, type: 'B4' },
@@ -61,31 +32,7 @@ function MainApp() {
     return null;
   };
 
-  const handleTimerComplete = (sessionLength) => {
-    setCurrentFocusTime(prev => prev + sessionLength);
-    const buildingType = getBuildingType(sessionLength);
-    if (buildingType) {
-      setBuildings(prev => [...prev, {
-        type: buildingType,
-        duration: sessionLength,
-        date: new Date().toLocaleString(),
-        position: {
-          x: Math.random() * 600,
-          y: Math.random() * 300
-        }
-      }]);
-    }
-  };
-
-  const addBuilding = (buildingType) => {
-    setBuildings(prev => [...prev, {
-      type: buildingType,
-      position: {
-        x: Math.random() * 600,
-        y: Math.random() * 300
-      }
-    }]);
-  };
+  // Only handleTimerComplete is needed here, logic is now in App
 
   if (location.pathname === '/city') {
     return <CityViewPage buildings={buildings} />;
@@ -112,20 +59,93 @@ function AuthenticatedLayout({ children }) {
 }
 
 function App() {
-  const token = localStorage.getItem('token');
+  const [buildings, setBuildings] = useState([]);
+  const [lastSessionLength, setLastSessionLength] = useState(25);
+  let token = localStorage.getItem('token');
+  let isTokenValid = false;
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      if (decoded.exp && Date.now() < decoded.exp * 1000) {
+        isTokenValid = true;
+      } else {
+        localStorage.removeItem('token');
+        token = null;
+      }
+    } catch {
+      localStorage.removeItem('token');
+      token = null;
+    }
+  }
+
+  // Fetch city data on mount
+  React.useEffect(() => {
+    if (!token) return;
+    fetch('http://localhost:5001/api/city', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.buildings) setBuildings(data.buildings);
+      });
+  }, [token]);
+
+  // Save city data when buildings change
+  React.useEffect(() => {
+    if (!token || buildings.length === 0) return;
+    fetch('http://localhost:5001/api/city', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ buildings })
+    });
+  }, [buildings, token]);
+
+  const BUILDING_TYPES = [
+    { min: 90, type: 'B4' },
+    { min: 60, type: 'B3' },
+    { min: 30, type: 'B2' },
+    { min: 0, type: 'B1' },
+  ];
+
+  const getBuildingType = (minutes) => {
+    for (let b of BUILDING_TYPES) {
+      if (minutes >= b.min) return b.type;
+    }
+    return null;
+  };
+
+  const handleTimerComplete = (sessionLength) => {
+    // This is now the single source of truth for adding buildings
+    const buildingType = getBuildingType(sessionLength);
+    if (buildingType) {
+      setBuildings(prev => [...prev, {
+        type: buildingType,
+        duration: sessionLength,
+        date: new Date().toLocaleString(),
+        position: {
+          x: Math.random() * 600,
+          y: Math.random() * 300
+        }
+      }]);
+    }
+  };
+
   return (
     <Router>
       <Switch>
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/rooms/:roomId" render={props => (
-          token ? <AuthenticatedLayout><RoomView {...props} /></AuthenticatedLayout> : <Redirect to="/login" />
+          isTokenValid ? <AuthenticatedLayout><RoomView {...props} /></AuthenticatedLayout> : <Redirect to="/login" />
         )} />
         <Route path="/rooms" render={props => (
-          token ? <AuthenticatedLayout><RoomLobby {...props} /></AuthenticatedLayout> : <Redirect to="/login" />
+          isTokenValid ? <AuthenticatedLayout><RoomLobby {...props} /></AuthenticatedLayout> : <Redirect to="/login" />
         )} />
         <Route path="/" render={() => (
-          token ? <AuthenticatedLayout><MainApp /></AuthenticatedLayout> : <Redirect to="/login" />
+          isTokenValid ? <AuthenticatedLayout><MainApp buildings={buildings} setBuildings={setBuildings} handleTimerComplete={handleTimerComplete} lastSessionLength={lastSessionLength} setLastSessionLength={setLastSessionLength} /></AuthenticatedLayout> : <Redirect to="/login" />
         )} />
       </Switch>
     </Router>

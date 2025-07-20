@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const history = useHistory();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -16,7 +18,7 @@ const Login = () => {
     const data = await res.json();
     if (res.ok && data.token) {
       localStorage.setItem('token', data.token);
-      window.location.href = '/';
+      history.push('/');
     } else {
       setError(data.error || 'Login failed');
     }

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
 
 const Register = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const history = useHistory();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -24,7 +26,7 @@ const Register = () => {
       
     if (res.ok && data.token) {
       localStorage.setItem('token', data.token);
-      window.location.href = '/';
+      history.push('/');
       } else {
         if (res.status === 409) {
           setError(`Username "${username}" is already taken. Please choose a different username.`);

@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema({
     city: {
         buildings: [{
             type: String,
+            duration: Number,
+            date: String,
             position: {
                 x: Number,
                 y: Number

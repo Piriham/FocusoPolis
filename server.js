@@ -107,7 +107,7 @@ app.get('/api/city', authenticateJWT, async (req, res) => {
 app.post('/api/city', authenticateJWT, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    user.city = req.body.city;
+    user.city = req.body; // Save the city as { buildings: [...] }
     await user.save();
     res.json({ success: true });
   } catch (error) {
