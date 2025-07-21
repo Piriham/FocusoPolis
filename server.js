@@ -142,7 +142,7 @@ app.post('/api/register', async (req, res) => {
       city: { buildings: [] } 
     });
     
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '7d' });
     console.log('User created successfully:', username);
     res.json({ token });
   } catch (error) {
@@ -171,7 +171,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '7d' });
     console.log('Login successful:', username);
     res.json({ token });
   } catch (error) {

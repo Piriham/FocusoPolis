@@ -53,7 +53,7 @@ function AuthenticatedLayout({ children }) {
   return (
     <>
       <AppNavigation />
-      <div style={{ paddingTop: 80 }}>{children}</div>
+      <div style={{ paddingTop: 170 }}>{children}</div>
     </>
   );
 }
@@ -91,17 +91,17 @@ function App() {
   }, [token]);
 
   // Save city data when buildings change
-  React.useEffect(() => {
-    if (!token || buildings.length === 0) return;
-    fetch('http://localhost:5001/api/city', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ buildings })
-    });
-  }, [buildings, token]);
+  // React.useEffect(() => {
+  //   if (!token || buildings.length === 0) return;
+  //   fetch('http://localhost:5001/api/city', {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //       'Authorization': `Bearer ${token}`
+  //     },
+  //     body: JSON.stringify({ buildings })
+  //   });
+  // }, [buildings, token]);
 
   const BUILDING_TYPES = [
     { min: 90, type: 'B4' },
@@ -121,15 +121,29 @@ function App() {
     // This is now the single source of truth for adding buildings
     const buildingType = getBuildingType(sessionLength);
     if (buildingType) {
-      setBuildings(prev => [...prev, {
-        type: buildingType,
-        duration: sessionLength,
-        date: new Date().toLocaleString(),
-        position: {
-          x: Math.random() * 600,
-          y: Math.random() * 300
+      setBuildings(prev => {
+        const newBuildings = [...prev, {
+          type: buildingType,
+          duration: sessionLength,
+          date: new Date().toLocaleString(),
+          position: {
+            x: Math.random() * 600,
+            y: Math.random() * 300
+          }
+        }];
+        // Save city data to backend immediately after adding a building
+        if (token) {
+          fetch('http://localhost:5001/api/city', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ buildings: newBuildings })
+          });
         }
-      }]);
+        return newBuildings;
+      });
     }
   };
 
