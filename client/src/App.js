@@ -81,7 +81,7 @@ function App() {
   // Fetch city data on mount
   React.useEffect(() => {
     if (!token) return;
-    fetch('http://localhost:5001/api/city', {
+    fetch('https://focusopolis.onrender.com/api/city', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -93,7 +93,7 @@ function App() {
   // Save city data when buildings change
   // React.useEffect(() => {
   //   if (!token || buildings.length === 0) return;
-  //   fetch('http://localhost:5001/api/city', {
+  //   fetch('https://focusopolis.onrender.com/api/city', {
   //     method: 'POST',
   //     headers: {
   //       'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ function App() {
         }];
         // Save city data to backend immediately after adding a building
         if (token) {
-          fetch('http://localhost:5001/api/city', {
+          fetch('https://focusopolis.onrender.com/api/city', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

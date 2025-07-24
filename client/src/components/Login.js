@@ -8,7 +8,7 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    const res = await fetch('http://localhost:5001/api/login', {
+    const res = await fetch('https://focusopolis.onrender.com/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })

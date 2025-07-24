@@ -33,7 +33,7 @@ const RoomView = () => {
   const fetchGoalProgress = async () => {
     setGoalLoading(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/${roomId}/goal-progress`, {
+      const res = await fetch(`https://focusopolis.onrender.com/api/rooms/${roomId}/goal-progress`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -56,8 +56,8 @@ const RoomView = () => {
       try {
         const token = localStorage.getItem('token');
         const [roomRes, leaderboardRes] = await Promise.all([
-          fetch(`http://localhost:5001/api/rooms/${roomId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`http://localhost:5001/api/rooms/${roomId}/leaderboard`, { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`https://focusopolis.onrender.com/api/rooms/${roomId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`https://focusopolis.onrender.com/api/rooms/${roomId}/leaderboard`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         if (!roomRes.ok) throw new Error('Failed to fetch room details');
         if (!leaderboardRes.ok) throw new Error('Failed to fetch leaderboard');
@@ -77,7 +77,7 @@ const RoomView = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const s = io('http://localhost:5001', {
+    const s = io('https://focusopolis.onrender.com', {
       auth: { token }
     });
     setSocket(s);
@@ -86,7 +86,7 @@ const RoomView = () => {
       setMessages((prev) => [...prev, msg]);
     });
     // Fetch chat history
-    fetch(`http://localhost:5001/api/rooms/${roomId}/messages`, {
+    fetch(`https://focusopolis.onrender.com/api/rooms/${roomId}/messages`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -103,7 +103,7 @@ const RoomView = () => {
   const handleLeave = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5001/api/rooms/${roomId}/leave`, {
+      const res = await fetch(`https://focusopolis.onrender.com/api/rooms/${roomId}/leave`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -136,7 +136,7 @@ const RoomView = () => {
   // Update description
   const handleDescriptionSave = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/${roomId}/description`, {
+      const res = await fetch(`https://focusopolis.onrender.com/api/rooms/${roomId}/description`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -154,7 +154,7 @@ const RoomView = () => {
   // Remove member
   const handleRemoveMember = async (userId) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/${roomId}/remove-member`, {
+      const res = await fetch(`https://focusopolis.onrender.com/api/rooms/${roomId}/remove-member`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -172,7 +172,7 @@ const RoomView = () => {
   const handleDeleteRoom = async () => {
     if (!window.confirm('Are you sure you want to delete this room? This cannot be undone.')) return;
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/${roomId}`, {
+      const res = await fetch(`https://focusopolis.onrender.com/api/rooms/${roomId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -188,7 +188,7 @@ const RoomView = () => {
     if (!goalAmountInput || !goalPeriodInput) return;
     setGoalLoading(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/${roomId}/goal`, {
+      const res = await fetch(`https://focusopolis.onrender.com/api/rooms/${roomId}/goal`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

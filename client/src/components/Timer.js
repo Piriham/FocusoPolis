@@ -9,7 +9,7 @@ const Timer = ({ onTimerComplete, sessionLength }) => {
             const token = localStorage.getItem('token');
             if (!token) return;
 
-            const response = await fetch('http://localhost:5001/api/focus-session', {
+            const response = await fetch('https://focusopolis.onrender.com/api/focus-session', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

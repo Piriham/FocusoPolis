@@ -15,7 +15,7 @@ const FocusStats = ({ focusData }) => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5001/api/focus-stats?period=${period}`, {
+      const response = await fetch(`https://focusopolis.onrender.com/api/focus-stats?period=${period}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
