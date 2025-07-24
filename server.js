@@ -13,13 +13,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: 'https://focusopolis.vercel.app',
     credentials: true
   }
 });
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({ origin: 'https://focusopolis.vercel.app', credentials: true }));
 app.use(express.json());
 
 // Connect to MongoDB with better error handling
