@@ -303,4 +303,4 @@ This project is for educational and personal use. The codebase demonstrates mode
 - **Building Assets**: 3D models and images for the city-building gamification
 - **React Community**: For the excellent documentation and ecosystem
 - **Node.js Community**: For the robust backend framework
-- **MongoDB**: For the flexible NoSQL database solution 
+- **MongoDB**: For the flexible NoSQL database solution
